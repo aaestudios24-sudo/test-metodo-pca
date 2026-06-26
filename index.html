@@ -385,9 +385,26 @@
 
 <!-- BTN CALCULAR -->
 <div class="progress-hint" id="progress-hint">Respondé todas las preguntas para ver tu resultado</div>
-<button class="btn-calcular" id="btn-calcular" onclick="calcular()" disabled style="opacity:0.4;">
+<button class="btn-calcular" id="btn-calcular" onclick="pedirEmail()" disabled style="opacity:0.4;">
   Ver mi resultado →
 </button>
+
+<!-- PANTALLA EMAIL -->
+<div id="email-screen" style="display:none; background:white; margin:12px 16px; border-radius:16px; padding:32px 24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center;">
+  <div style="font-size:40px; margin-bottom:16px;">📬</div>
+  <h2 style="font-family:Georgia,serif; font-size:22px; color:#3A3A3A; margin-bottom:10px;">¡Ya tenés tu resultado!</h2>
+  <p style="font-size:15px; color:#666; line-height:1.6; margin-bottom:24px;">Ingresá tu email para verlo.<br>No spam, solo tu diagnóstico.</p>
+  <input type="email" id="email-input" placeholder="tu@email.com"
+    style="width:100%; padding:14px 16px; border:2px solid #E0E0E0; border-radius:12px; font-size:16px; outline:none; margin-bottom:12px; box-sizing:border-box; transition:border-color 0.2s;"
+    onfocus="this.style.borderColor='#C4867A'" onblur="this.style.borderColor='#E0E0E0'"
+    onkeydown="if(event.key==='Enter') enviarEmailYMostrar()" />
+  <div id="email-error" style="color:#E74C3C; font-size:13px; margin-bottom:8px; display:none;">Por favor ingresá un email válido.</div>
+  <button onclick="enviarEmailYMostrar()"
+    style="width:100%; padding:16px; background:#C4867A; color:white; border:none; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; transition:opacity 0.2s;"
+    onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+    Ver mi resultado →
+  </button>
+</div>
 
 <!-- RESULTADO -->
 <div id="resultado">
@@ -486,6 +503,45 @@
     document.getElementById('progress-hint').textContent = done
       ? '¡Listo! Calculá tu resultado ↓'
       : `Respondiste ${Object.keys(answers).length} de 9 preguntas`;
+  }
+
+  const SHEET_ID = '1uJ2_L_QEM-A3RJmU7DEuXp0PHrg81hJVCGieyRgu3dA';
+
+  function pedirEmail() {
+    document.getElementById('btn-calcular').style.display = 'none';
+    document.getElementById('progress-hint').style.display = 'none';
+    const screen = document.getElementById('email-screen');
+    screen.style.display = 'block';
+    setTimeout(() => screen.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    setTimeout(() => document.getElementById('email-input').focus(), 400);
+  }
+
+  function enviarEmailYMostrar() {
+    const emailInput = document.getElementById('email-input');
+    const email = emailInput.value.trim();
+    const errorEl = document.getElementById('email-error');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      errorEl.style.display = 'block';
+      emailInput.style.borderColor = '#E74C3C';
+      return;
+    }
+    errorEl.style.display = 'none';
+
+    const sp = score('p'), sc = score('c'), sa = score('a');
+    const total = sp + sc + sa;
+
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9OHtyxCK4BxBgBRRyQCycly4WR0yxCdRQrUaeVxdgZzigqOYPHtvh0aeXTmYWVVK5CA/exec';
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, puntaje: total, fecha: new Date().toISOString() })
+    }).catch(() => {});
+
+    document.getElementById('email-screen').style.display = 'none';
+    calcular();
   }
 
   function calcular() {
